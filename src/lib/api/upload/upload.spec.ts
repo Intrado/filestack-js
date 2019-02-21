@@ -17,21 +17,32 @@
 
 import * as assert from 'assert';
 import * as sinon from 'sinon';
+// import * as request from 'superagent';
+// import * as td from 'testdouble';
+// import * as rewire from 'rewire';
+
 import { upload } from './index';
 import * as fs from 'fs';
 
 declare var ENV: any;
+declare var session: any;
+declare var secureSession: any;
+
+let errorUploadCode = null;
+let timeout = null;
+let errorProxyAbort = false;
 
 const testFilePath = './test/data/testfile.txt';
 const testImageFilePath = './test/data/fish.gif';
-const session = ENV.session;
-const secureSession = ENV.secureSession;
+
 const makeFile = (data: string, type: string = 'image/gif') => {
   return ENV.isNode ? testFilePath : new Blob([data], { type });
 };
+
 const makeEmptyFile = () => {
   return ENV.isNode ? './test/data/emptyfile.txt' : new Blob([''], { type: 'application/text' });
 };
+
 const smallFile = makeFile('helloworld');
 const emptyFile = makeEmptyFile();
 const noFile = ENV.isNode ? './Idonotexist' : undefined;
@@ -65,7 +76,13 @@ const dataURI = `data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZ
 
 const b64string = 'dGVzdA=='; // b64 for "test"
 
-describe('upload', function uploadTest() {
+describe.only('upload', function uploadTest() {
+  beforeEach(() => {
+    errorUploadCode = null;
+    timeout = null;
+    errorProxyAbort = false;
+  });
+
   this.timeout(120000);
 
   it('should reject if a file is not a blob', (done) => {
@@ -217,6 +234,7 @@ describe('upload', function uploadTest() {
 
   it('should upload a file and report progress', (done) => {
     const onProgress = sinon.spy();
+
     upload(session, smallFile, {
       retry: 0,
       onProgress,
@@ -229,6 +247,7 @@ describe('upload', function uploadTest() {
       assert.ok(res.handle);
       assert.ok(res.url);
       assert.ok(onProgress.called);
+      assert.ok(onProgress.lastCall);
       assert.equal(onProgress.lastCall.args[0].totalPercent, 100);
       done();
     })
@@ -238,7 +257,7 @@ describe('upload', function uploadTest() {
   });
 
   it('should upload a file with intelligent ingestion', (done) => {
-    upload(ENV.intelligentSession, smallFile, {
+    upload(secureSession, smallFile, {
       intelligent: true,
       retry: 0,
     })
@@ -248,13 +267,14 @@ describe('upload', function uploadTest() {
       done();
     })
     .catch((err: Error) => {
+      console.log(err, '12312312');
       done(err);
     });
   });
 
   it('should upload a file with intelligent ingestion and report progress', (done) => {
     const onProgress = sinon.spy();
-    upload(ENV.intelligentSession, smallFile, {
+    upload(secureSession, smallFile, {
       retry: 0,
       onProgress,
       progressInterval: 10,
@@ -277,7 +297,7 @@ describe('upload', function uploadTest() {
 
   it('should upload a file with intelligent ingestion fallback and report progress', (done) => {
     const onProgress = sinon.spy();
-    upload(ENV.intelligentSession, smallFile, {
+    upload(secureSession, smallFile, {
       retry: 0,
       onProgress,
       progressInterval: 10,
@@ -294,7 +314,6 @@ describe('upload', function uploadTest() {
       done();
     })
     .catch((err: Error) => {
-      console.log(err);
       done(err);
     });
   });
@@ -336,16 +355,17 @@ describe('upload', function uploadTest() {
 
   it('should cancel uploading if token.cancel is called', (done) => {
     const token: any = {};
+    timeout = 500;
 
     upload(session, smallFile, {
       retry: 0,
-      host: ENV.urls.proxySlow,
     }, {}, token)
     .then((res: any) => {
       done(res);
     })
     .catch((err: Error) => {
       assert.ok(err);
+      timeout = null;
       done();
     });
 
@@ -360,7 +380,7 @@ describe('upload', function uploadTest() {
       filename: 'dutton.gif',
       workflows: ['test', {
         id: 'test',
-      }]
+      }],
     })
     .then((res: any) => {
       assert.ok(res.handle);
@@ -377,13 +397,22 @@ describe('upload', function uploadTest() {
 
 if (ENV.testEnv === 'unit') {
 
-  describe('upload failure simulation', () => {
+  describe('upload failure simulation', function() {
+    beforeEach(() => {
+      errorUploadCode = null;
+      timeout = null;
+      errorProxyAbort = false;
+    });
+
+    this.timeout(10000);
+
     describe('4xx response', function retryFailures() {
-      this.timeout(60000);
+
       it('should fail immediately', (done) => {
+        errorUploadCode = 400;
+
         const onRetry = sinon.spy();
         upload(session, smallFile, {
-          host: ENV.urls.proxy400,
           retry: 0,
           onRetry,
         })
@@ -397,16 +426,19 @@ if (ENV.testEnv === 'unit') {
     });
 
     describe('5xx response', function retryFailures() {
-      this.timeout(60000);
+
       it('should retry and increment retry count', (done) => {
+        errorUploadCode = 500;
+
         const onRetry = sinon.spy();
         upload(session, smallFile, {
-          host: ENV.urls.proxy500,
           onRetry,
+          timeout: 100,
           retry: 1,
         })
         .then(() => done('Retry was not called'))
         .catch((err: any) => {
+          assert.ok(onRetry.called);
           assert.equal(onRetry.firstCall.args[0].attempt, 1);
           assert.ok(err);
           done();
@@ -415,12 +447,13 @@ if (ENV.testEnv === 'unit') {
     });
 
     describe('intelligent ingestion server error', function intelligentSrvErr() {
-      this.timeout(80000);
       it('should retry on server error and increment retry amount', (done) => {
+        errorUploadCode = 500;
+
         const onRetry = sinon.spy();
-        upload(ENV.intelligentSession, smallFile, {
-          host: ENV.urls.proxy500,
+        upload(secureSession, smallFile, {
           onRetry,
+          timeout: 100,
           retry: 2,
           intelligent: true,
         })
@@ -435,13 +468,15 @@ if (ENV.testEnv === 'unit') {
     });
 
     describe('intelligent ingestion S3 network error', function intelligentNetErr() {
-      this.timeout(60000);
+
       it('should retry and halve chunk size each time', (done) => {
+        errorProxyAbort = true;
+
         const onRetry = sinon.spy();
         const defaultChunkSize = (1 * 1024 * 1024) / 4;
-        upload(ENV.intelligentSession, smallFile, {
-          host: ENV.urls.proxyAbort,
+        upload(secureSession, smallFile, {
           onRetry,
+          timeout: 100,
           intelligent: true,
           intelligentChunkSize: defaultChunkSize,
         })
@@ -455,12 +490,14 @@ if (ENV.testEnv === 'unit') {
       });
 
       it('should fail when minimum chunk size is reached', (done) => {
+        errorProxyAbort = true;
+
         const onRetry = sinon.spy();
         const minChunkSize = 32 * 1024;
-        upload(ENV.intelligentSession, smallFile, {
-          host: ENV.urls.proxyAbort,
+        upload(secureSession, smallFile, {
           onRetry,
           intelligent: true,
+          timeout: 100,
           intelligentChunkSize: minChunkSize * 2,
         })
         .then(() => done('Retry was not called.'))
@@ -472,12 +509,14 @@ if (ENV.testEnv === 'unit') {
       });
 
       it('should set intelligentOverride on part when in fallback mode', (done) => {
+        errorProxyAbort = true;
+
         const onRetry = sinon.spy();
         const minChunkSize = 32 * 1024;
-        upload(ENV.intelligentSession, smallFile, {
-          host: ENV.urls.proxyAbort,
+        upload(secureSession, smallFile, {
           onRetry,
           intelligent: 'fallback',
+          timeout: 100,
           intelligentChunkSize: minChunkSize * 2,
         })
         .then(() => done('Did not fail'))

@@ -9,7 +9,7 @@ module.exports = function karmaConfig(config) {
     frameworks: ['browserify', 'mocha'],
     reporters: ['progress'],
     browserify: {
-      debug: true,
+      debug: false,
       transform: [
         'envify',
       ],
@@ -25,6 +25,8 @@ module.exports = function karmaConfig(config) {
       accessKey: process.env.BROWSERSTACK_ACCESS_KEY,
       timeout: 1800,
       forcelocal: true,
+      enableLoggingForApi: true,
+      debug: true
     },
     customLaunchers: {
       bs_edge_windows_latest: {
@@ -33,19 +35,22 @@ module.exports = function karmaConfig(config) {
         os_version: '10',
         browser: 'Edge',
         browser_version: 'latest',
+        debug: true,
       },
       bs_safari_osx_latest: {
         base: 'BrowserStack',
         os: 'OS X',
-        os_version: null,
+        os_version: 'Mojave',
         browser: 'Safari',
         browser_version: 'latest',
+        debug: true,
       },
       bs_iphone6: {
         base: 'BrowserStack',
         device: 'iPhone 6',
         os: 'ios',
         os_version: '8.3',
+        debug: true,
       },
       bs_ie11: {
         base: 'BrowserStack',
@@ -77,11 +82,14 @@ module.exports = function karmaConfig(config) {
       'bs_ie11',
       'chrome_headless',
       'bs_edge_windows_latest',
-      'firefox_headless',
+      'firefox_headless',,
+      'bs_safari_osx_latest',
     ] : [
       // 'electron',
-      'firefox_headless',
+      // 'firefox_headless',
       'chrome_headless',
+      // 'Safari',
+      // 'bs_safari_osx_latest'
       // 'bs_ie11',
       // 'bs_edge_windows_latest',
     ],

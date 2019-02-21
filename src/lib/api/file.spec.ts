@@ -25,10 +25,11 @@ import { storeURL } from './store';
 
 declare var ENV: any;
 
-const session = ENV.session;
-const secureSession = ENV.secureSession;
-const filelink = ENV.filelink;
-const secureFilelink = ENV.secureFilelink;
+declare var session: any;
+declare var secureSession: any;
+
+const filelink = session.filelink;
+const secureFilelink = secureSession.secureFilelink;
 
 describe('metadata', function metadataFunc() {
   this.timeout(60000);

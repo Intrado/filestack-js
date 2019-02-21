@@ -21,9 +21,10 @@ import { preview } from './preview';
 
 declare var ENV: any;
 
-const session = ENV.session;
-const secureSession = ENV.secureSession;
-const filelink = ENV.filelink;
+declare var session: any;
+declare var secureSession: any;
+
+const filelink = session.filelink;
 
 describe('preview', () => {
   let appendChildSpy: sinon.SinonSpy;

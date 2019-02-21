@@ -8,10 +8,10 @@
     "processApiUrl": "https://process-stage.filestackapi.com",
     "cdnUrl": "http://localhost:3000/cdn",
     "testImageUrl": "https://d1wtqaffaaj63z.cloudfront.net/images/Zanzibar_Red_Colobus_Monkey.jpg",
-    "proxy500": "http://localhost:3001",
-    "proxyAbort": "http://localhost:3002",
-    "proxy400": "http://localhost:3003",
-    "proxySlow": "http://localhost:3004"
+    "proxy500": "http://192.168.10.255:9900",
+    "proxyAbort": "http://192.168.10.255:9901",
+    "proxy400": "http://192.168.10.255:9902",
+    "proxySlow": "http://192.168.10.255:9903"
   },
   "integration": {
     "storeApiUrl": "https://www.filestackapi.com/api/store",
@@ -22,9 +22,9 @@
     "processApiUrl": "https://process-stage.filestackapi.com",
     "cdnUrl": "https://process-stage.filestackapi.com",
     "testImageUrl": "https://d1wtqaffaaj63z.cloudfront.net/images/Zanzibar_Red_Colobus_Monkey.jpg",
-    "proxy500": "http://localhost:3001",
-    "proxyAbort": "http://localhost:3002",
-    "proxy400": "http://localhost:3003",
-    "proxySlow": "http://localhost:3004"
+    "proxy500": "http://localhost:9900",
+    "proxyAbort": "http://localhost:9901",
+    "proxy400": "http://localhost:9902",
+    "proxySlow": "http://localhost:9903"
   }
 }

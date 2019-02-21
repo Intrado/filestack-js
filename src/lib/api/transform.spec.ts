@@ -20,8 +20,9 @@ import * as t from './transform';
 import { btoa } from 'abab';
 
 declare var ENV: any;
-const session = ENV.session;
-const secureSession = ENV.secureSession;
+declare var session: any;
+declare var secureSession: any;
+
 const cdnUrl = session.urls.cdnUrl;
 
 describe('transform', () => {
@@ -32,6 +33,10 @@ describe('transform', () => {
 
   it('should throw an error if invalid options are provided', () => {
     assert.throws(() => transform(url, { invalidKey: 'ignored' }));
+  });
+
+  it('should pass without options', () => {
+    assert.ok(() => transform(url, {}));
   });
 
   it('should construct URL parameters from specified transforms', () => {

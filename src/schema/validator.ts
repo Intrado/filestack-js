@@ -22,7 +22,7 @@ let validator;
 // workaround for problem with exporting lib in browser
 // @ts-ignore
 if (ajv.default) {
-  // @ts-ignore
+  // @ts-ignore istanbul ignore next
   validator = ajv.default;
 } else {
   validator = ajv;
@@ -35,30 +35,4 @@ if (ajv.default) {
  */
 export const getValidator = (schema) => {
   return validator().compile(schema);
-};
-
-/**
- * Converts object values to lower case
- * @param ob
- */
-export const valuesToLowerCase = (ob: any): any => {
-  if (typeof ob === 'string') {
-    return ob.toLowerCase();
-  }
-
-  if (Array.isArray(ob)) {
-    return ob.map(el => {
-      return valuesToLowerCase(el);
-    });
-  }
-
-  if (ob === Object(ob)) {
-    for (let i in ob) {
-      ob[i] = valuesToLowerCase(ob[i]);
-    }
-
-    return ob;
-  }
-
-  return ob;
 };

@@ -19,8 +19,8 @@ import * as assert from 'assert';
 import { storeURL } from './store';
 
 declare var ENV: any;
-const session = ENV.session;
-const secureSession = ENV.secureSession;
+declare var session: any;
+declare var secureSession: any;
 
 describe('storeURL', function storeFunc() {
   this.timeout(30000);

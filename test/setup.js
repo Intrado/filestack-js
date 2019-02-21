@@ -1,32 +1,28 @@
 const testEnv = process.env.TEST_ENV || 'unit';
-const urls = require('./urls.json')[testEnv];
+
+const fsUrls = {
+  fileApiUrl: 'https://www.filestackapi.com/api/file',
+  uploadApiUrl: 'https://upload.filestackapi.com',
+  cloudApiUrl: 'https://cloud.filestackapi.com',
+  cdnUrl: 'https://cdn.filestackcontent.com',
+};
+
+window.session = {
+  apikey: 'fakekey',
+  urls: fsUrls,
+  handle: 'W1LOh6RdqHqolomhqMUQ',
+  filelink: 'W1LOh6RdqHqolomhqMUQ',
+};
+window.secureSession = {
+  apikey: 'fakekey',
+  filelink: 'W1LOh6RdqHqolomhqMUQ',
+  urls: fsUrls,
+  signature: process.env.TEST_CLOUD_SIGNATURE || 'fakesignature',
+  policy: process.env.TEST_CLOUD_POLICY || 'fakepolicy',
+};
+
 var ENV = window.ENV = {
-  session: {
-    apikey: process.env.TEST_APIKEY || 'fakekey',
-    urls: urls,
-  },
-  intelligentSession: {
-    apikey: process.env.TEST_INTELLIGENT_APIKEY || 'fakekey',
-    urls: Object.assign({}, urls, { uploadApiUrl: urls.intelligentUploadApiUrl }),
-  },
-  cloudSession: {
-    apikey: process.env.TEST_CLOUD_APIKEY || 'fakekey',
-    urls: urls,
-  },
-  secureCloudSession: {
-    apikey: process.env.TEST_CLOUD_SECURE_APIKEY || 'fakesecurekey',
-    signature: process.env.TEST_CLOUD_SIGNATURE || 'fakesignature',
-    policy: process.env.TEST_CLOUD_POLICY || 'fakepolicy',
-    urls: urls,
-  },
-  secureSession: {
-    apikey: process.env.TEST_SECURE_APIKEY || 'fakesecurekey',
-    signature: process.env.TEST_SIGNATURE || 'fakesignature',
-    policy: process.env.TEST_POLICY || 'fakepolicy',
-    urls: urls,
-  },
-  filelink: process.env.TEST_FILELINK || 'W1LOh6RdqHqolomhqMUQ',
-  secureFilelink: process.env.TEST_SECURE_FILELINK || 'W1LOh6RdqHqolomhqMUQ',
-  urls: urls,
   testEnv: testEnv,
 };
+
+var supermock = window.superMock = require('superagent-mock');

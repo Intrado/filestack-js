@@ -63,6 +63,7 @@ const plugins = [
   }),
   babel({ 
     runtimeHelpers: true,
+    exclude: ['node_modules/sinon/pkg/sinon-esm.js'],
     presets: [
       [
         "@babel/preset-env",
