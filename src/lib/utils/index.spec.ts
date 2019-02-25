@@ -23,7 +23,7 @@ import * as t from 'tcomb-validation';
 import { checkOptions, removeEmpty, resolveCdnUrl } from './index';
 declare var ENV: any;
 
-const session = ENV.session;
+declare var session: any;
 
 describe('resolveCdnUrl', () => {
 

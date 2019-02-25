@@ -23,16 +23,13 @@ import {
 } from './file';
 import { storeURL } from './store';
 
-declare var ENV: any;
-
 declare var session: any;
 declare var secureSession: any;
 
 const filelink = session.filelink;
-const secureFilelink = secureSession.secureFilelink;
+const secureFilelink = secureSession.filelink;
 
 describe('metadata', function metadataFunc() {
-  this.timeout(60000);
 
   it('should throw an error if no handle is set', () => {
     assert.throws(() => metadata(session));
@@ -87,7 +84,6 @@ describe('metadata', function metadataFunc() {
 });
 
 describe('retrieve', function metadataFunc() {
-  this.timeout(60000);
 
   it('should throw an error if no handle is set', () => {
     assert.throws(() => retrieve(session, ''));
@@ -171,7 +167,6 @@ describe('retrieve', function metadataFunc() {
 });
 
 describe('remove', function removeFunc() {
-  this.timeout(60000);
 
   it('should throw an error if no handle is set', () => {
     assert.throws(() => remove(secureSession));
@@ -183,7 +178,7 @@ describe('remove', function removeFunc() {
 
   it('should get an ok response with a valid handle', (done) => {
     // have to create a file before we can test deleting it
-    storeURL(secureSession, ENV.urls.testImageUrl)
+    storeURL(secureSession, secureSession.externalImage)
       .then((res: any) => {
         const handle = res.handle;
         remove(secureSession, handle)
@@ -202,7 +197,7 @@ describe('remove', function removeFunc() {
 
   it('should get an ok response when skip_storage is true', (done) => {
     // have to create a file before we can test deleting it
-    storeURL(secureSession, ENV.urls.testImageUrl)
+    storeURL(secureSession, secureSession.externalImage)
       .then((res: any) => {
         const handle = res.handle;
         remove(secureSession, handle, true)
@@ -223,7 +218,7 @@ describe('remove', function removeFunc() {
     const sessionClone = JSON.parse(JSON.stringify(secureSession));
     sessionClone.urls.fileApiUrl = 'somebadurl';
 
-    storeURL(secureSession, ENV.urls.testImageUrl)
+    storeURL(secureSession, secureSession.externalImage)
       .then((res: any) => {
         const handle = res.handle;
 

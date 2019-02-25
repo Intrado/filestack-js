@@ -18,10 +18,9 @@
 import * as assert from 'assert';
 import { CloudClient, PICKER_KEY } from './cloud';
 
-declare var ENV: any;
+declare var session: any;
+declare var secureSession: any;
 
-const session = ENV.cloudSession;
-const secureSession = ENV.secureCloudSession;
 const mockClouds = {
   facebook: {
     path: '/',
@@ -29,7 +28,6 @@ const mockClouds = {
 };
 
 describe('cloud', function cloud() {
-  this.timeout(60000);
 
   it('should construct an instance of CloudClient', () => {
     const client = new CloudClient(session);

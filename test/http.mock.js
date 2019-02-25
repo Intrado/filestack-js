@@ -1,56 +1,112 @@
-const NodeHttpAdapter = require('@pollyjs/adapter-node-http');
-const FSPersister = require('@pollyjs/persister-fs');
-const { Polly, setupMocha: setupPolly } = require('@pollyjs/core');
+const { Timing } = require('@pollyjs/core');
 
+module.exports = function({ server }) {
+  server.host('https://upload.filestackapi.com', () => {
+    // Uploads
+    server.post('/multipart/start').intercept((_, res) => {
+      res.status(200).json({
+        uri: '/testfile.gif',
+        region: 'us-east-1',
+        upload_id: 'test_upload_ud',
+        location_url: 'test_upload.filestackapi.com'
+      });
+    });
 
-Polly.register(NodeHttpAdapter);
-Polly.register(FSPersister);
+    server
+      .post('/multipart/upload')
+      .intercept(async (_, res) => {
+        await server.timeout(100);
 
-console.log('==== RUN POLLY (Node) ====');
+        res.status(200).json({
+          location_url: 'test_upload.filestackapi.com',
+          url: 'test_location_url',
+          headers: {
+            forward: 'true'
+          }
+        });
+      });
 
-const polly = new Polly('Api', {
-  adapters: ['node-http'],
-  logging: false 
-});
+    server.post('/multipart/complete').intercept((_, res) => {
+      res.status(200).json({
+        handle: '7xSJALUhSlCDCNujt5Ku',
+        url: 'https://agnostic-cdn.filestackapi.com/7xSJALUhSlCDCNujt5Ku',
+        filename: 'dutton.gif',
+        size: 35,
+        mimetype: 'image/gif',
+        status: 'Stored'
+      });
+    });
 
-polly.server.host('https://upload.filestackapi.com', () => {
-  polly.server.post('/multipart/start').intercept((req, res) => {
-    res.status(200).json({
-      uri: '/testfile.gif',
-      region: 'us-east-1',
-      upload_id: 'test_upload_ud',
-      location_url: 'test_upload.filestackapi.com',
+    server.post('/multipart/commit').intercept((_, res) => {
+      res.setHeader('etag', 'some_etag').status(200);
+    });
+
+    server.put('/fakeS3').intercept((_, res) => {
+      res.setHeader('etag', 'some_etag').status(200);
     });
   });
 
-  polly.server.post('/multipart/upload').intercept((req, res) => {
-    res.status(200).json({
-      location_url: 'test_upload.filestackapi.com',
-      url: 'test_location_url',
-      headers: {
-        forward: true,
-      },
+  // clouds
+  server.host('https://cloud.filestackapi.com', () => {
+    server.get('/prefetch').intercept((_, res) => {
+      res.status(200).json({
+        intelligent_ingestion: false,
+        blocked: false,
+        blacklisted: false,
+        whitelabel: true,
+        customsource: true,
+        customsource_name: 'devportal-customers-assets-cs'
+      });
+    });
+
+    server.post('/folder/list').intercept((_, res) => {
+      res.status(200).json({
+        facebook: {},
+        token: 'testtoken'
+      });
     });
   });
 
-  polly.server.post('/multipart/complete').intercept((req, res) => {
-    res.status(200).json({
-      handle: '7xSJALUhSlCDCNujt5Ku',
-      url: 'https://agnostic-cdn.filestackapi.com/7xSJALUhSlCDCNujt5Ku',
-      filename: 'dutton.gif',
-      size: 35,
-      mimetype: 'image/gif',
-      status: 'Stored',
+  // cdn
+  server.host('https://cdn.filestackcontent.com/', () => {
+    server
+      .get('/:apikey/*')
+      .intercept(async (_, res) => {
+        await server.timeout(100);
+
+        res.status(200).json({
+          handle: '7xSJALUhSlCDCNujt5Ku',
+          url: 'https://agnostic-cdn.filestackapi.com/7xSJALUhSlCDCNujt5Ku',
+          filename: 'dutton.gif',
+          size: 35,
+          mimetype: 'image/gif'
+        });
+      });
+  });
+
+  server.host('https://www.filestackapi.com/', () => {
+    server.delete('/api/file/*').intercept((_, res) => {
+      res.status(200).json({});
+    });
+
+    server.get('/api/file/*').intercept((_, res) => {
+      res.status(200).json({
+        mimetype: 'image/jpeg',
+        uploaded: 1504120869761.631,
+        size: 120305,
+        writeable: true,
+        filename: 'Zanzibar_Red_Colobus_Monkey.jpg'
+      });
+    });
+
+    server.head('/api/file/*').intercept((_, res) => {
+      res.status(201);
     });
   });
 
-  polly.server.post('/multipart/commit').intercept((req, res) => {
-    res.setHeader('etag', 'some_etag').status(200);
+  server.host('http://www.somebadurl.com', () => {
+    server.any('/*').intercept((_, res) => {
+      res.status(404).json({});
+    });
   });
-
-  polly.server.put('/fakeS3').intercept((req, res) => {
-    res.setHeader('etag', 'some_etag').status(200);
-  });
-});
-
-global.pollyServer = polly.server;
+};

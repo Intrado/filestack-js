@@ -29,7 +29,7 @@ describe('transform', () => {
   const transform = (url: string, options: any, b64: boolean = false) => t.transform(session, url, options, b64);
   const transformSecure = (url: string, options: any, b64: boolean = false) => t.transform(secureSession, url, options, b64);
 
-  const url = ENV.filelink;
+  const url = session.filelink;
 
   it('should throw an error if invalid options are provided', () => {
     assert.throws(() => transform(url, { invalidKey: 'ignored' }));
@@ -298,7 +298,7 @@ describe('transform b64', () => {
   const transform = (url: string, options: any, b64: boolean = true) => t.transform(session, url, options, b64);
   const transformSecure = (url: string, options: any, b64: boolean = true) => t.transform(secureSession, url, options, b64);
 
-  const url = ENV.filelink;
+  const url = session.filelink;
 
   it('should throw an error if invalid options are provided', () => {
     assert.throws(() => transform(url, { invalidKey: 'ignored' }));

@@ -45,11 +45,6 @@ export const storeURL = (
 
   const baseURL = new Filelink(url, session.apikey);
   baseURL.setCname(session.cname);
-  // baseURL.setBase64(true); // Enable it after fix in mocks
-
-  if (session.urls.cdnUrl.indexOf('localhost') > -1 || session.urls.cdnUrl.indexOf('badurl') > -1) {
-    baseURL.setCustomDomain(session.urls.cdnUrl);
-  }
 
   if (session.policy && session.signature) {
     baseURL.security({
@@ -60,9 +55,6 @@ export const storeURL = (
 
   baseURL.store(opts);
 
-  // const baseURL = transform(session, url, {
-  //   store : opts || {},
-  // });
   return new Promise((resolve, reject) => {
     const req = request.get(baseURL.toString());
 

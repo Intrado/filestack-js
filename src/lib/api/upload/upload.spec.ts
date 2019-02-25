@@ -17,20 +17,12 @@
 
 import * as assert from 'assert';
 import * as sinon from 'sinon';
-// import * as request from 'superagent';
-// import * as td from 'testdouble';
-// import * as rewire from 'rewire';
-
 import { upload } from './index';
 import * as fs from 'fs';
 
 declare var ENV: any;
 declare var session: any;
 declare var secureSession: any;
-
-let errorUploadCode = null;
-let timeout = null;
-let errorProxyAbort = false;
 
 const testFilePath = './test/data/testfile.txt';
 const testImageFilePath = './test/data/fish.gif';
@@ -76,14 +68,7 @@ const dataURI = `data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZ
 
 const b64string = 'dGVzdA=='; // b64 for "test"
 
-describe.only('upload', function uploadTest() {
-  beforeEach(() => {
-    errorUploadCode = null;
-    timeout = null;
-    errorProxyAbort = false;
-  });
-
-  this.timeout(120000);
+describe('upload', function uploadTest() {
 
   it('should reject if a file is not a blob', (done) => {
     upload(session, 5).catch((err: Error) => {
@@ -267,7 +252,6 @@ describe.only('upload', function uploadTest() {
       done();
     })
     .catch((err: Error) => {
-      console.log(err, '12312312');
       done(err);
     });
   });
@@ -355,7 +339,6 @@ describe.only('upload', function uploadTest() {
 
   it('should cancel uploading if token.cancel is called', (done) => {
     const token: any = {};
-    timeout = 500;
 
     upload(session, smallFile, {
       retry: 0,
@@ -365,7 +348,6 @@ describe.only('upload', function uploadTest() {
     })
     .catch((err: Error) => {
       assert.ok(err);
-      timeout = null;
       done();
     });
 
@@ -398,18 +380,15 @@ describe.only('upload', function uploadTest() {
 if (ENV.testEnv === 'unit') {
 
   describe('upload failure simulation', function() {
-    beforeEach(() => {
-      errorUploadCode = null;
-      timeout = null;
-      errorProxyAbort = false;
-    });
-
-    this.timeout(10000);
+    this.timeout(5000);
 
     describe('4xx response', function retryFailures() {
 
-      it('should fail immediately', (done) => {
-        errorUploadCode = 400;
+      it('should fail immediately', function (done) {
+
+        this.polly.server.post('https://upload.filestackapi.com/multipart/upload').intercept((_, res) => {
+          res.status(404);
+        });
 
         const onRetry = sinon.spy();
         upload(session, smallFile, {
@@ -427,13 +406,15 @@ if (ENV.testEnv === 'unit') {
 
     describe('5xx response', function retryFailures() {
 
-      it('should retry and increment retry count', (done) => {
-        errorUploadCode = 500;
+      it('should retry and increment retry count', function(done) {
+        this.polly.server.post('https://upload.filestackapi.com/multipart/upload').intercept((_, res) => {
+          res.status(500).json({ error: 'poisoned request' });
+        });
 
         const onRetry = sinon.spy();
         upload(session, smallFile, {
           onRetry,
-          timeout: 100,
+          timeout: 200,
           retry: 1,
         })
         .then(() => done('Retry was not called'))
@@ -447,13 +428,15 @@ if (ENV.testEnv === 'unit') {
     });
 
     describe('intelligent ingestion server error', function intelligentSrvErr() {
-      it('should retry on server error and increment retry amount', (done) => {
-        errorUploadCode = 500;
+      it('should retry on server error and increment retry amount', function(done) {
+        this.polly.server.post('https://upload.filestackapi.com/multipart/upload').intercept((_, res) => {
+          res.status(500).json({ error: 'poisoned request' });
+        });
 
         const onRetry = sinon.spy();
         upload(secureSession, smallFile, {
           onRetry,
-          timeout: 100,
+          timeout: 200,
           retry: 2,
           intelligent: true,
         })
@@ -469,8 +452,10 @@ if (ENV.testEnv === 'unit') {
 
     describe('intelligent ingestion S3 network error', function intelligentNetErr() {
 
-      it('should retry and halve chunk size each time', (done) => {
-        errorProxyAbort = true;
+      it('should retry and halve chunk size each time', function(done) {
+        this.polly.server.post('https://upload.filestackapi.com/fakeS3').intercept((_, res, interceptor) => {
+          interceptor.abort();
+        });
 
         const onRetry = sinon.spy();
         const defaultChunkSize = (1 * 1024 * 1024) / 4;
@@ -489,8 +474,10 @@ if (ENV.testEnv === 'unit') {
         });
       });
 
-      it('should fail when minimum chunk size is reached', (done) => {
-        errorProxyAbort = true;
+      it('should fail when minimum chunk size is reached', function(done) {
+        this.polly.server.post('https://upload.filestackapi.com/fakeS3').intercept((_, res, interceptor) => {
+          interceptor.abort();
+        });
 
         const onRetry = sinon.spy();
         const minChunkSize = 32 * 1024;
@@ -508,8 +495,10 @@ if (ENV.testEnv === 'unit') {
         });
       });
 
-      it('should set intelligentOverride on part when in fallback mode', (done) => {
-        errorProxyAbort = true;
+      it('should set intelligentOverride on part when in fallback mode', function(done) {
+        this.polly.server.post('https://upload.filestackapi.com/fakeS3').intercept((_, res, interceptor) => {
+          interceptor.abort();
+        });
 
         const onRetry = sinon.spy();
         const minChunkSize = 32 * 1024;
